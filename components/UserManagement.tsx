@@ -7,9 +7,10 @@ interface UserManagementProps {
   users: User[];
   onAddUser: (name: string) => void;
   onDeleteUser: (userId: string) => void;
+  involvedUserIds: Set<string>;
 }
 
-const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onDeleteUser }) => {
+const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onDeleteUser, involvedUserIds }) => {
   const [newUserName, setNewUserName] = useState('');
 
   const handleAddUser = (e: React.FormEvent) => {
@@ -38,14 +39,22 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onAddUser, onDel
       </form>
       <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
         {users.length > 0 ? (
-          users.map(user => (
-            <div key={user.id} className="flex items-center justify-between bg-background/50 p-3 rounded-md">
-              <span className="text-on-surface">{user.name}</span>
-              <button onClick={() => onDeleteUser(user.id)} className="text-on-surface-secondary hover:text-danger transition-colors p-1">
-                <TrashIcon />
-              </button>
-            </div>
-          ))
+          users.map(user => {
+            const isDeletable = !involvedUserIds.has(user.id);
+            return (
+              <div key={user.id} className="flex items-center justify-between bg-background/50 p-3 rounded-md">
+                <span className="text-on-surface">{user.name}</span>
+                <button 
+                  onClick={() => onDeleteUser(user.id)} 
+                  className="p-1 disabled:text-gray-600 disabled:cursor-not-allowed text-on-surface-secondary hover:text-danger transition-colors"
+                  disabled={!isDeletable}
+                  title={isDeletable ? "Delete user" : "Cannot delete user involved in expenses."}
+                >
+                  <TrashIcon />
+                </button>
+              </div>
+            )
+          })
         ) : (
           <p className="text-on-surface-secondary text-center py-4">Add users to get started.</p>
         )}

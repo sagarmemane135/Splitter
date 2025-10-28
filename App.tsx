@@ -169,6 +169,21 @@ const App: React.FC = () => {
   const balances = useMemo(() => calculateBalances(users, expenses), [users, expenses]);
   const simplifiedTransactions = useMemo(() => simplifyDebts(balances), [balances]);
 
+  const involvedUserIds = useMemo(() => {
+    const userSet = new Set<string>();
+    if (!activeGroup) return userSet;
+
+    for (const expense of activeGroup.expenses) {
+        for (const payer of expense.payers) {
+            userSet.add(payer.userId);
+        }
+        for (const participant of expense.participants) {
+            userSet.add(participant.userId);
+        }
+    }
+    return userSet;
+  }, [activeGroup]);
+
   const handleAddGroup = (name: string) => {
     const newGroup: Group = { id: Date.now().toString(), name, users: [], expenses: [] };
     const newGroups = [...groups, newGroup];
@@ -208,20 +223,14 @@ const App: React.FC = () => {
   };
 
   const handleDeleteUser = (userId: string) => {
-    if (!activeGroup) return;
-    const updatedExpenses = activeGroup.expenses
-      .map(expense => {
-        if (expense.payers.some(p => p.userId === userId)) return null;
-        const newParticipants = expense.participants.filter(p => p.userId !== userId);
-        if (newParticipants.length === 0) return null;
-        return { ...expense, participants: newParticipants };
-      })
-      .filter((e): e is Expense => e !== null);
-    
+    if (!activeGroup || involvedUserIds.has(userId)) {
+      // UI should prevent this, but as a safeguard:
+      alert("Cannot delete a user involved in expenses. Please remove them from all expenses first.");
+      return;
+    }
     const updatedGroup = {
       ...activeGroup,
       users: activeGroup.users.filter(u => u.id !== userId),
-      expenses: updatedExpenses,
     };
     updateAndBroadcastGroup(updatedGroup);
   };
@@ -460,6 +469,7 @@ const App: React.FC = () => {
                 users={users}
                 onAddUser={handleAddUser}
                 onDeleteUser={handleDeleteUser}
+                involvedUserIds={involvedUserIds}
               />
               <BalanceSummary balances={balances} />
               <SimplifiedTransactions transactions={simplifiedTransactions} />
