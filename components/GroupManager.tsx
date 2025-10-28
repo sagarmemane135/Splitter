@@ -33,13 +33,13 @@ const GroupManager: React.FC<GroupManagerProps> = ({ groups, activeGroupId, onSe
 
   if (isAdding) {
     return (
-      <form onSubmit={handleAddGroup} className="flex-grow flex justify-center items-center gap-2">
+      <form onSubmit={handleAddGroup} className="flex flex-grow items-center gap-2">
         <input
           type="text"
           value={newGroupName}
           onChange={(e) => setNewGroupName(e.target.value)}
-          placeholder="New group name ('Trip to Goa')"
-          className="w-full max-w-xs bg-background border border-gray-600 rounded-md px-3 py-2 text-on-surface focus:ring-primary focus:border-primary transition"
+          placeholder="New group name"
+          className="flex-grow w-full bg-background border border-gray-600 rounded-md px-3 py-2 text-on-surface focus:ring-primary focus:border-primary transition"
           autoFocus
         />
         <button type="submit" className="px-3 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-focus rounded-md transition-colors">
@@ -53,11 +53,11 @@ const GroupManager: React.FC<GroupManagerProps> = ({ groups, activeGroupId, onSe
   }
 
   return (
-    <div className="flex-grow flex justify-center">
+    <div className="flex justify-center">
       <select
         value={activeGroupId || ''}
         onChange={handleSelectChange}
-        className="w-full max-w-xs bg-background border border-gray-600 rounded-md px-3 py-2 text-on-surface focus:ring-primary focus:border-primary transition"
+        className="w-40 sm:w-auto sm:min-w-[180px] bg-background border border-gray-600 rounded-md px-3 py-2 text-on-surface focus:ring-primary focus:border-primary transition"
         aria-label="Select Expense Group"
       >
         {groups.length === 0 && <option value="" disabled>No groups yet</option>}

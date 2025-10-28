@@ -55,4 +55,5 @@ export interface Group {
 export type CollabPayload =
   | { type: 'GROUP_UPDATE'; group: Group }
   | { type: 'JOIN_REQUEST'; name: string }
-  | { type: 'GROUP_SYNC'; group: Group; assignedUser: User };
+  | { type: 'GROUP_SYNC'; group: Group; assignedUser: User }
+  | { type: 'ADD_COMMENT'; groupId: string; expenseId: string; comment: Comment };

@@ -37,7 +37,8 @@ const PDFReport = React.forwardRef<HTMLDivElement, PDFReportProps>(({ group, bal
         </section>
         
         <section className="break-inside-avoid">
-          <ExpenseList expenses={group.expenses} users={group.users} onEdit={() => {}} onDelete={() => {}} isPdf={true} />
+          {/* FIX: Added missing onAddComment and currentUserId props to ExpenseList for PDF generation. */}
+          <ExpenseList expenses={group.expenses} users={group.users} onEdit={() => {}} onDelete={() => {}} onAddComment={() => {}} currentUserId={null} isPdf={true} />
         </section>
       </main>
 

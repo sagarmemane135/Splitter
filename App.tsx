@@ -13,6 +13,7 @@ import GroupManager from './components/GroupManager';
 import CollaborationManager from './components/CollaborationManager';
 import { DownloadIcon } from './components/icons/DownloadIcon';
 import { ShareIcon } from './components/icons/ShareIcon';
+import { TrashIcon } from './components/icons/TrashIcon';
 import PDFReport from './components/PDFReport';
 
 // Extend window interface for jsPDF and html2canvas
@@ -30,6 +31,18 @@ const App: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showCollabModal, setShowCollabModal] = useState(false);
   const pdfReportRef = useRef<HTMLDivElement>(null);
+  
+  const activeGroup = useMemo(() => groups.find(g => g.id === activeGroupId), [groups, activeGroupId]);
+
+  const updateAndBroadcastGroup = useCallback((updatedGroup: Group) => {
+    setGroups(prevGroups => prevGroups.map(g => g.id === updatedGroup.id ? updatedGroup : g));
+
+    if (connections.length > 0) {
+      const payload: CollabPayload = { type: 'GROUP_UPDATE', group: updatedGroup };
+      broadcast(payload);
+    }
+  }, [setGroups]); // connections and broadcast are stable refs from the hook
+
 
   const handleDataReceived = useCallback((message: CollabPayload, conn?: any) => {
     switch (message.type) {
@@ -54,10 +67,8 @@ const App: React.FC = () => {
       }
 
       case 'JOIN_REQUEST': {
-        if (!activeGroupId || !conn) return;
-        
         const currentActiveGroup = groups.find(g => g.id === activeGroupId);
-        if (!currentActiveGroup) return;
+        if (!currentActiveGroup || !conn) return;
 
         let userToAssign: User | undefined = currentActiveGroup.users.find(u => u.name.toLowerCase() === message.name.toLowerCase());
         let updatedGroup = currentActiveGroup;
@@ -79,19 +90,29 @@ const App: React.FC = () => {
         conn.send(JSON.stringify(syncPayload));
         break;
       }
+      
+      case 'ADD_COMMENT': {
+        setGroups(prevGroups => prevGroups.map(group => {
+            if (group.id !== message.groupId) return group;
+            
+            return {
+                ...group,
+                expenses: group.expenses.map(expense => {
+                    if (expense.id !== message.expenseId) return expense;
+
+                    return {
+                        ...expense,
+                        comments: [...(expense.comments || []), message.comment]
+                    };
+                })
+            };
+        }));
+        break;
+      }
     }
-  }, [groups, setGroups, activeGroupId, setActiveGroupId, setCurrentUserId]);
+  }, [groups, setGroups, activeGroupId, setActiveGroupId, setCurrentUserId, updateAndBroadcastGroup]);
   
   const { peerId, connections, connectToPeer, broadcast } = useCollaboration(handleDataReceived);
-  
-  const updateAndBroadcastGroup = (updatedGroup: Group) => {
-    setGroups(prevGroups => prevGroups.map(g => g.id === updatedGroup.id ? updatedGroup : g));
-
-    if (connections.length > 0) {
-      const payload: CollabPayload = { type: 'GROUP_UPDATE', group: updatedGroup };
-      broadcast(payload);
-    }
-  };
 
 
   const handleJoinSession = (remotePeerId: string, name: string) => {
@@ -107,7 +128,6 @@ const App: React.FC = () => {
     }
   }, [groups, activeGroupId, setActiveGroupId]);
 
-  const activeGroup = useMemo(() => groups.find(g => g.id === activeGroupId), [groups, activeGroupId]);
 
   const users = activeGroup?.users || [];
   const expenses = activeGroup?.expenses || [];
@@ -207,16 +227,32 @@ const App: React.FC = () => {
       timestamp: new Date().toISOString()
     };
     
-    const updatedGroup = {
-      ...activeGroup,
-      expenses: activeGroup.expenses.map(expense => 
-        expense.id === expenseId
-          ? { ...expense, comments: [...expense.comments, newComment] }
-          : expense
-      )
-    };
-    updateAndBroadcastGroup(updatedGroup);
+    // Update local state immediately
+    setGroups(prevGroups => prevGroups.map(group => 
+      group.id === activeGroup.id
+        ? {
+            ...group,
+            expenses: group.expenses.map(expense => 
+              expense.id === expenseId
+                ? { ...expense, comments: [...(expense.comments || []), newComment] }
+                : expense
+            )
+          }
+        : group
+    ));
+
+    // Broadcast only the new comment for efficiency
+    if (connections.length > 0) {
+      const payload: CollabPayload = { 
+        type: 'ADD_COMMENT', 
+        groupId: activeGroup.id,
+        expenseId, 
+        comment: newComment 
+      };
+      broadcast(payload);
+    }
   };
+
 
   const resetData = () => {
     if (window.confirm('Are you sure you want to delete ALL groups and data? This cannot be undone.')) {
@@ -278,31 +314,34 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-background font-sans">
       <header className="bg-surface/50 backdrop-blur-sm sticky top-0 z-10 shadow-md">
-        <div className="container mx-auto px-2 sm:px-4 lg:px-8 py-4 flex justify-between items-center gap-2 sm:gap-4 flex-wrap">
+        <div className="container mx-auto px-2 sm:px-4 lg:px-8 py-4 flex flex-wrap justify-between items-center gap-x-4 gap-y-3">
           <h1 className="text-xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary whitespace-nowrap">
             Splitter
           </h1>
-          <GroupManager
-            groups={groups}
-            activeGroupId={activeGroupId}
-            onAddGroup={handleAddGroup}
-            onSelectGroup={setActiveGroupId}
-          />
-           <div className="flex items-center gap-2">
+          
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 w-full sm:w-auto flex-grow sm:flex-grow-0">
+            <GroupManager
+              groups={groups}
+              activeGroupId={activeGroupId}
+              onAddGroup={handleAddGroup}
+              onSelectGroup={setActiveGroupId}
+            />
+            
             {activeGroup && users.length > 0 && (
               <select
                 value={currentUserId || ''}
                 onChange={e => setCurrentUserId(e.target.value)}
-                className="bg-background border border-gray-600 rounded-md px-3 py-2 text-on-surface text-sm focus:ring-primary focus:border-primary transition"
+                className="bg-background border border-gray-600 rounded-md px-3 py-2 text-on-surface text-sm focus:ring-primary focus:border-primary transition max-w-[120px] sm:max-w-[150px]"
                 aria-label="Select your user identity"
               >
                 <option value="" disabled>Select Identity</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             )}
-             <button
+            
+            <button
               onClick={() => setShowCollabModal(true)}
-              className="relative flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-secondary/80 hover:bg-secondary rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-secondary"
+              className="relative flex items-center justify-center p-2 sm:px-3 sm:gap-2 text-sm font-medium text-white bg-secondary/80 hover:bg-secondary rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-secondary"
               title="Collaborate with others"
             >
               <ShareIcon />
@@ -313,21 +352,25 @@ const App: React.FC = () => {
                 </span>
               )}
             </button>
-             <button
+
+            <button
               id="pdf-download-btn"
               onClick={handleDownloadPdf}
               disabled={!activeGroup}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-focus rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-primary whitespace-nowrap disabled:bg-gray-600 disabled:cursor-not-allowed"
+              className="flex items-center justify-center p-2 sm:px-3 sm:gap-2 text-sm font-medium text-white bg-primary hover:bg-primary-focus rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-primary whitespace-nowrap disabled:bg-gray-600 disabled:cursor-not-allowed"
               title="Download report as PDF"
             >
               <DownloadIcon />
               <span className="hidden sm:inline">Download</span>
             </button>
+
             <button
               onClick={resetData}
-              className="px-3 py-2 text-sm font-medium text-white bg-danger/80 hover:bg-danger rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-danger whitespace-nowrap"
+              className="flex items-center justify-center p-2 sm:px-3 sm:gap-2 text-sm font-medium text-white bg-danger/80 hover:bg-danger rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-danger whitespace-nowrap"
+              title="Reset All Data"
             >
-              Reset All
+              <TrashIcon />
+              <span className="hidden sm:inline">Reset All</span>
             </button>
           </div>
         </div>
