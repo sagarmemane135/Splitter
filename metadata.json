@@ -1,0 +1,5 @@
+{
+  "name": "Expense Splitter and Debt Simplifier",
+  "description": "A simple, client-side web app to split expenses among a group of people and calculate the simplest way to settle debts. All data is stored locally in your browser.",
+  "requestFramePermissions": []
+}
