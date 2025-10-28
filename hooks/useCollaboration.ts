@@ -13,6 +13,7 @@ export const useCollaboration = (onDataReceived: (data: CollabPayload, conn: any
   const peerRef = useRef<any>(null);
   const connectionsRef = useRef<any[]>([]);
   const onDataReceivedRef = useRef(onDataReceived);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     onDataReceivedRef.current = onDataReceived;
@@ -48,7 +49,11 @@ export const useCollaboration = (onDataReceived: (data: CollabPayload, conn: any
     conn.on('error', (err: any) => handleCloseOrError(err));
   }, []);
 
-  const initializePeer = useCallback(() => {
+  const initializePeer = useCallback((existingId?: string | null) => {
+    if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+    }
+    
     if (peerRef.current) {
       peerRef.current.destroy();
     }
@@ -57,21 +62,32 @@ export const useCollaboration = (onDataReceived: (data: CollabPayload, conn: any
         return;
     }
 
-    const peer = new window.Peer(undefined, {});
+    const peer = new window.Peer(existingId || undefined, {});
     peerRef.current = peer;
 
-    peer.on('open', setPeerId);
-    peer.on('connection', setupConnection);
-    peer.on('disconnected', () => {
-      console.warn('Disconnected from PeerJS server, attempting to reconnect...');
+    peer.on('open', (id: string) => {
+        setPeerId(id);
+        console.log('PeerJS connection established with ID:', id);
     });
+
+    peer.on('connection', setupConnection);
+
+    peer.on('disconnected', () => {
+      console.warn('Disconnected from PeerJS server. The library will attempt to reconnect automatically.');
+    });
+
     peer.on('error', (err: any) => {
       console.error('PeerJS error:', err);
       if (err.type === 'peer-unavailable') {
         alert("Could not connect to peer. The ID might be invalid or the user is offline.");
       } else if (['network', 'server-error', 'socket-error', 'webrtc'].includes(err.type)) {
         console.log(`Fatal error (${err.type}). Re-initializing PeerJS connection in 3 seconds.`);
-        setTimeout(initializePeer, 3000);
+        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = setTimeout(() => {
+            console.log("Attempting to re-initialize PeerJS with ID:", peerRef.current?.id);
+            // Re-initialize with the same ID to maintain the session
+            initializePeer(peerRef.current?.id);
+        }, 3000);
       }
     });
   }, [setupConnection]);
@@ -79,6 +95,9 @@ export const useCollaboration = (onDataReceived: (data: CollabPayload, conn: any
   useEffect(() => {
     initializePeer();
     return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
       if (peerRef.current) {
         peerRef.current.destroy();
       }
