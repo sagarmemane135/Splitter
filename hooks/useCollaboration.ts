@@ -12,12 +12,17 @@ export const useCollaboration = (onDataReceived: (data: CollabPayload, conn: any
   const [connections, setConnections] = useState<any[]>([]);
   const peerRef = useRef<any>(null);
   const connectionsRef = useRef<any[]>([]);
+  const onDataReceivedRef = useRef(onDataReceived);
+
+  useEffect(() => {
+    onDataReceivedRef.current = onDataReceived;
+  }, [onDataReceived]);
 
   const setupConnection = useCallback((conn: any) => {
     conn.on('data', (data: any) => {
       try {
         const parsedData = JSON.parse(data);
-        onDataReceived(parsedData, conn);
+        onDataReceivedRef.current(parsedData, conn);
       } catch (e) {
         console.error('Failed to parse incoming data:', e, data);
       }
@@ -30,50 +35,55 @@ export const useCollaboration = (onDataReceived: (data: CollabPayload, conn: any
       }
     });
 
-    conn.on('close', () => {
+    const handleCloseOrError = (err?: any) => {
+      if (err) {
+        console.error(`Connection error with peer ${conn.peer}:`, err);
+      }
+      console.log(`Connection to peer ${conn.peer} has been closed.`);
       connectionsRef.current = connectionsRef.current.filter(c => c.peer !== conn.peer);
       setConnections(prev => prev.filter(c => c.peer !== conn.peer));
-    });
+    };
 
-    conn.on('error', (err: any) => {
-        console.error('Peer connection error:', err);
-        connectionsRef.current = connectionsRef.current.filter(c => c.peer !== conn.peer);
-        setConnections(prev => prev.filter(c => c.peer !== conn.peer));
-    });
-  }, [onDataReceived]);
+    conn.on('close', () => handleCloseOrError());
+    conn.on('error', (err: any) => handleCloseOrError(err));
+  }, []);
 
-  useEffect(() => {
+  const initializePeer = useCallback(() => {
+    if (peerRef.current) {
+      peerRef.current.destroy();
+    }
     if (!window.Peer) {
-      console.warn("PeerJS is not loaded, collaboration disabled.");
-      return;
+        console.warn("PeerJS is not loaded, collaboration disabled.");
+        return;
     }
 
-    let peer = new window.Peer(undefined, {
-        // For production, you'd host your own PeerJS server.
-        // For this demo, the default public server is fine.
-    });
+    const peer = new window.Peer(undefined, {});
     peerRef.current = peer;
 
-    peer.on('open', (id: string) => {
-      setPeerId(id);
+    peer.on('open', setPeerId);
+    peer.on('connection', setupConnection);
+    peer.on('disconnected', () => {
+      console.warn('Disconnected from PeerJS server, attempting to reconnect...');
     });
-
-    peer.on('connection', (conn: any) => {
-      setupConnection(conn);
-    });
-
     peer.on('error', (err: any) => {
       console.error('PeerJS error:', err);
-      // Attempt to reconnect or inform user
       if (err.type === 'peer-unavailable') {
         alert("Could not connect to peer. The ID might be invalid or the user is offline.");
+      } else if (['network', 'server-error', 'socket-error', 'webrtc'].includes(err.type)) {
+        console.log(`Fatal error (${err.type}). Re-initializing PeerJS connection in 3 seconds.`);
+        setTimeout(initializePeer, 3000);
       }
     });
-    
-    return () => {
-      peer.destroy();
-    };
   }, [setupConnection]);
+
+  useEffect(() => {
+    initializePeer();
+    return () => {
+      if (peerRef.current) {
+        peerRef.current.destroy();
+      }
+    };
+  }, [initializePeer]);
 
   const connectToPeer = (remotePeerId: string, name: string) => {
     if (!peerRef.current || !remotePeerId || remotePeerId === peerId) return;
@@ -83,13 +93,13 @@ export const useCollaboration = (onDataReceived: (data: CollabPayload, conn: any
     }
 
     const conn = peerRef.current.connect(remotePeerId, { reliable: true });
-    if(conn) {
-        conn.on('open', () => {
-            // Once connection is open, send join request
-            const payload: CollabPayload = { type: 'JOIN_REQUEST', name };
-            conn.send(JSON.stringify(payload));
-            setupConnection(conn);
-        });
+    if (conn) {
+      // Set up listeners immediately to avoid race conditions
+      setupConnection(conn);
+      conn.on('open', () => {
+        const payload: CollabPayload = { type: 'JOIN_REQUEST', name };
+        conn.send(JSON.stringify(payload));
+      });
     }
   };
 
