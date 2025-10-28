@@ -81,13 +81,16 @@ const PDFReport = React.forwardRef<HTMLDivElement, PDFReportProps>(({ group, bal
                     <div className="space-y-2">
                         {transactions.length > 0 ? transactions.map((t, index) => (
                             <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-md text-sm">
-                                <span className="font-medium text-red-600 flex-1 min-w-0 truncate pr-2">{t.from.name}</span>
+                                <span className="font-medium text-red-600 pr-2">{t.from.name}</span>
                                 <div className="flex items-center justify-center flex-shrink-0 text-gray-500">
                                     <span className="font-bold text-gray-700 mx-1">₹{t.amount.toFixed(2)}</span>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary"><path d="M4 12H20M20 12L14 6M20 12L14 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
+                                        <path d="M4 12H20M20 12L14 6M20 12L14 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
                                 </div>
-                                <span className="font-medium text-green-600 flex-1 min-w-0 truncate text-right pl-2">{t.to.name}</span>
+                                <span className="font-medium text-green-600 pl-2 text-right">{t.to.name}</span>
                             </div>
+
                         )) : (
                             <p className="text-center p-4 text-gray-500">All debts are settled!</p>
                         )}
