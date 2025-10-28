@@ -32,8 +32,11 @@ const App: React.FC = () => {
   const [showCollabModal, setShowCollabModal] = useState(false);
   const [initialPeerId, setInitialPeerId] = useState<string | null>(null);
   const pdfReportRef = useRef<HTMLDivElement>(null);
-  
+  const [collabGroupId, setCollabGroupId] = useState<string | null>(null);
+
   const activeGroup = useMemo(() => groups.find(g => g.id === activeGroupId), [groups, activeGroupId]);
+  const isGuest = useMemo(() => collabGroupId !== null && collabGroupId === activeGroupId, [collabGroupId, activeGroupId]);
+
 
   const updateAndBroadcastGroup = useCallback((updatedGroup: Group) => {
     setGroups(prevGroups => prevGroups.map(g => g.id === updatedGroup.id ? updatedGroup : g));
@@ -63,6 +66,7 @@ const App: React.FC = () => {
         });
         setActiveGroupId(receivedGroup.id);
         setCurrentUserId(message.assignedUser.id);
+        setCollabGroupId(receivedGroup.id); // Lock identity to this group
         setShowCollabModal(false); // Close modal on successful sync
         break;
       }
@@ -139,6 +143,13 @@ const App: React.FC = () => {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
+  
+  useEffect(() => {
+    // If all connections are lost, end the "guest" session.
+    if (connections.length === 0) {
+      setCollabGroupId(null);
+    }
+  }, [connections]);
 
 
   const users = activeGroup?.users || [];
@@ -160,6 +171,7 @@ const App: React.FC = () => {
     const newGroups = [...groups, newGroup];
     setGroups(newGroups);
     setActiveGroupId(newGroup.id);
+    setCollabGroupId(null); // Creating a group makes you the owner, not a guest.
   };
 
   const handleAddUser = (name: string) => {
@@ -340,15 +352,21 @@ const App: React.FC = () => {
             />
             
             {activeGroup && users.length > 0 && (
-              <select
-                value={currentUserId || ''}
-                onChange={e => setCurrentUserId(e.target.value)}
-                className="bg-background border border-gray-600 rounded-md px-3 py-2 text-on-surface text-sm focus:ring-primary focus:border-primary transition max-w-[120px] sm:max-w-[150px]"
-                aria-label="Select your user identity"
+              <div 
+                className="relative"
+                title={isGuest ? "Identity is locked while in a collaboration session." : "Select your user identity"}
               >
-                <option value="" disabled>Select Identity</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
+                <select
+                  value={currentUserId || ''}
+                  onChange={e => setCurrentUserId(e.target.value)}
+                  className="bg-background border border-gray-600 rounded-md px-3 py-2 text-on-surface text-sm focus:ring-primary focus:border-primary transition max-w-[120px] sm:max-w-[150px] disabled:bg-gray-800 disabled:cursor-not-allowed disabled:text-on-surface-secondary"
+                  aria-label="Select your user identity"
+                  disabled={isGuest}
+                >
+                  <option value="" disabled>Select Identity</option>
+                  {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+              </div>
             )}
             
             <button
