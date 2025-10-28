@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CopyIcon } from './icons/CopyIcon';
+import { WhatsAppIcon } from './icons/WhatsAppIcon';
 
 interface CollaborationManagerProps {
   peerId: string | null;
@@ -7,10 +8,11 @@ interface CollaborationManagerProps {
   onJoinSession: (peerId: string, name: string) => void;
   onClose: () => void;
   activeGroupName: string | null;
+  initialPeerId?: string | null;
 }
 
-const CollaborationManager: React.FC<CollaborationManagerProps> = ({ peerId, connections, onJoinSession, onClose, activeGroupName }) => {
-  const [remotePeerId, setRemotePeerId] = useState('');
+const CollaborationManager: React.FC<CollaborationManagerProps> = ({ peerId, connections, onJoinSession, onClose, activeGroupName, initialPeerId }) => {
+  const [remotePeerId, setRemotePeerId] = useState(initialPeerId || '');
   const [userName, setUserName] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -29,15 +31,42 @@ const CollaborationManager: React.FC<CollaborationManagerProps> = ({ peerId, con
     }
   };
   
+  const handleShareOnWhatsApp = () => {
+    if (!peerId || !activeGroupName) return;
+    const appUrl = `${window.location.origin}${window.location.pathname}?join=${peerId}`;
+    const message = `Join my expense group "${activeGroupName}" on Splitter! Click the link to join:\n\n${appUrl}`;
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-surface rounded-lg shadow-2xl p-4 sm:p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
         <h2 className="text-2xl font-bold mb-4 text-on-surface">Collaboration</h2>
         
-        {/* Invite Section */}
         {activeGroupName ? (
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-on-surface-secondary mb-2">Invite others to "{activeGroupName}"</h3>
+            <p className="text-xs text-on-surface-secondary mb-2">Share a link to let others join your active group.</p>
+            
+            <button
+              onClick={handleShareOnWhatsApp}
+              className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-3 rounded-md transition-colors flex items-center justify-center gap-2"
+              disabled={!peerId}
+              title="Share on WhatsApp"
+            >
+              <WhatsAppIcon />
+              Share via WhatsApp
+            </button>
+            
+            <div className="flex items-center my-4">
+                <div className="flex-grow border-t border-gray-600"></div>
+                <span className="flex-shrink mx-4 text-on-surface-secondary text-sm">or</span>
+                <div className="flex-grow border-t border-gray-600"></div>
+            </div>
+            
+            <p className="text-xs text-on-surface-secondary mb-1 text-center">copy the ID manually:</p>
+
             <div className="flex gap-2">
                 <input
                   type="text"
@@ -56,17 +85,16 @@ const CollaborationManager: React.FC<CollaborationManagerProps> = ({ peerId, con
                     {copied ? 'Copied!' : 'Copy'}
                 </button>
             </div>
-            <p className="text-xs text-on-surface-secondary mt-1">Share this ID to let others join your active group.</p>
           </div>
         ) : (
           <div className="mb-6 p-4 text-center bg-background/50 rounded-lg border border-gray-700">
             <p className="text-on-surface-secondary">Create or select a group to invite others.</p>
+
           </div>
         )}
 
         <div className="border-t border-gray-700 my-6"></div>
 
-        {/* Join Section */}
         <form onSubmit={handleJoin}>
             <h3 className="text-xl font-bold mb-4 text-on-surface">Join a Group</h3>
             <div className="space-y-4">
@@ -76,7 +104,7 @@ const CollaborationManager: React.FC<CollaborationManagerProps> = ({ peerId, con
                       type="text"
                       value={remotePeerId}
                       onChange={(e) => setRemotePeerId(e.target.value)}
-                      placeholder="Enter Session ID"
+                      placeholder="Enter Session ID from link"
                       className="w-full bg-background border border-gray-600 rounded-md px-3 py-2 text-on-surface focus:ring-primary focus:border-primary transition"
                       required
                     />
@@ -90,6 +118,7 @@ const CollaborationManager: React.FC<CollaborationManagerProps> = ({ peerId, con
                       placeholder="Enter your name for this session"
                       className="w-full bg-background border border-gray-600 rounded-md px-3 py-2 text-on-surface focus:ring-primary focus:border-primary transition"
                       required
+                      autoFocus={!!initialPeerId}
                     />
                 </div>
             </div>

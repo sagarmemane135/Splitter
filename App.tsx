@@ -30,6 +30,7 @@ const App: React.FC = () => {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showCollabModal, setShowCollabModal] = useState(false);
+  const [initialPeerId, setInitialPeerId] = useState<string | null>(null);
   const pdfReportRef = useRef<HTMLDivElement>(null);
   
   const activeGroup = useMemo(() => groups.find(g => g.id === activeGroupId), [groups, activeGroupId]);
@@ -127,6 +128,17 @@ const App: React.FC = () => {
       setActiveGroupId(groups[0].id);
     }
   }, [groups, activeGroupId, setActiveGroupId]);
+  
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinPeerId = urlParams.get('join');
+    if (joinPeerId) {
+        setInitialPeerId(joinPeerId);
+        setShowCollabModal(true);
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
 
   const users = activeGroup?.users || [];
@@ -422,6 +434,7 @@ const App: React.FC = () => {
           onJoinSession={handleJoinSession}
           onClose={() => setShowCollabModal(false)}
           activeGroupName={activeGroup?.name || null}
+          initialPeerId={initialPeerId}
         />
       )}
 
