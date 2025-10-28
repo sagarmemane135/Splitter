@@ -276,7 +276,7 @@ const App: React.FC = () => {
         downloadButton.setAttribute('disabled', 'true');
     }
     try {
-        const canvas = await window.html2canvas(pdfReportRef.current, { scale: 2, backgroundColor: '#111827', useCORS: true });
+        const canvas = await window.html2canvas(pdfReportRef.current, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         const pdfWidth = pdf.internal.pageSize.getWidth();
