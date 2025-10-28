@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { Group } from '../types';
+import { TrashIcon } from './icons/TrashIcon';
 
 interface GroupManagerProps {
   groups: Group[];
   activeGroupId: string | null;
   onSelectGroup: (groupId: string) => void;
   onAddGroup: (name: string) => void;
+  onDeleteGroup: (groupId: string) => void;
 }
 
-const GroupManager: React.FC<GroupManagerProps> = ({ groups, activeGroupId, onSelectGroup, onAddGroup }) => {
+const GroupManager: React.FC<GroupManagerProps> = ({ groups, activeGroupId, onSelectGroup, onAddGroup, onDeleteGroup }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
 
@@ -53,11 +55,11 @@ const GroupManager: React.FC<GroupManagerProps> = ({ groups, activeGroupId, onSe
   }
 
   return (
-    <div className="flex justify-center">
+    <div className="flex items-center gap-2">
       <select
         value={activeGroupId || ''}
         onChange={handleSelectChange}
-        className="w-40 sm:w-auto sm:min-w-[180px] bg-background border border-gray-600 rounded-md px-3 py-2 text-on-surface focus:ring-primary focus:border-primary transition"
+        className="w-36 sm:w-auto sm:min-w-[180px] bg-background border border-gray-600 rounded-md px-3 py-2 text-on-surface focus:ring-primary focus:border-primary transition"
         aria-label="Select Expense Group"
       >
         {groups.length === 0 && <option value="" disabled>No groups yet</option>}
@@ -70,6 +72,14 @@ const GroupManager: React.FC<GroupManagerProps> = ({ groups, activeGroupId, onSe
           + Create New Group
         </option>
       </select>
+       <button
+          onClick={() => activeGroupId && onDeleteGroup(activeGroupId)}
+          disabled={!activeGroupId || groups.length === 0}
+          className="p-2.5 bg-background border border-gray-600 rounded-md text-on-surface-secondary hover:text-danger hover:border-danger transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Delete selected group"
+        >
+          <TrashIcon />
+        </button>
     </div>
   );
 };

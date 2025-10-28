@@ -15,6 +15,7 @@ import { DownloadIcon } from './components/icons/DownloadIcon';
 import { ShareIcon } from './components/icons/ShareIcon';
 import { TrashIcon } from './components/icons/TrashIcon';
 import PDFReport from './components/PDFReport';
+import ConfirmationModal from './components/ConfirmationModal';
 
 // Extend window interface for jsPDF and html2canvas
 declare global {
@@ -33,6 +34,8 @@ const App: React.FC = () => {
   const [initialPeerId, setInitialPeerId] = useState<string | null>(null);
   const pdfReportRef = useRef<HTMLDivElement>(null);
   const [collabGroupId, setCollabGroupId] = useState<string | null>(null);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
 
   const activeGroup = useMemo(() => groups.find(g => g.id === activeGroupId), [groups, activeGroupId]);
   const isGuest = useMemo(() => collabGroupId !== null && collabGroupId === activeGroupId, [collabGroupId, activeGroupId]);
@@ -173,6 +176,27 @@ const App: React.FC = () => {
     setActiveGroupId(newGroup.id);
     setCollabGroupId(null); // Creating a group makes you the owner, not a guest.
   };
+  
+  const handleDeleteGroup = (groupId: string) => {
+    const group = groups.find(g => g.id === groupId);
+    if (group) {
+        setGroupToDelete(group);
+    }
+  };
+
+  const handleConfirmDeleteGroup = () => {
+    if (!groupToDelete) return;
+    
+    setGroups(prevGroups => {
+        const newGroups = prevGroups.filter(g => g.id !== groupToDelete.id);
+        if (activeGroupId === groupToDelete.id) {
+            setActiveGroupId(newGroups.length > 0 ? newGroups[0].id : null);
+        }
+        return newGroups;
+    });
+    
+    setGroupToDelete(null);
+  };
 
   const handleAddUser = (name: string) => {
     if (!activeGroup) return;
@@ -278,12 +302,10 @@ const App: React.FC = () => {
   };
 
 
-  const resetData = () => {
-    if (window.confirm('Are you sure you want to delete ALL groups and data? This cannot be undone.')) {
-      window.localStorage.removeItem('expense_groups');
-      window.localStorage.removeItem('active_group_id');
-      window.location.reload();
-    }
+  const handleConfirmReset = () => {
+    window.localStorage.removeItem('expense_groups');
+    window.localStorage.removeItem('active_group_id');
+    window.location.reload();
   };
   
   const handleDownloadPdf = async () => {
@@ -349,6 +371,7 @@ const App: React.FC = () => {
               activeGroupId={activeGroupId}
               onAddGroup={handleAddGroup}
               onSelectGroup={setActiveGroupId}
+              onDeleteGroup={handleDeleteGroup}
             />
             
             {activeGroup && users.length > 0 && (
@@ -395,7 +418,7 @@ const App: React.FC = () => {
             </button>
 
             <button
-              onClick={resetData}
+              onClick={() => setIsResetConfirmOpen(true)}
               className="flex items-center justify-center p-2 sm:px-3 sm:gap-2 text-sm font-medium text-white bg-danger/80 hover:bg-danger rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-danger whitespace-nowrap"
               title="Reset All Data"
             >
@@ -453,6 +476,26 @@ const App: React.FC = () => {
           onClose={() => setShowCollabModal(false)}
           activeGroupName={activeGroup?.name || null}
           initialPeerId={initialPeerId}
+        />
+      )}
+      
+      {isResetConfirmOpen && (
+        <ConfirmationModal
+          isOpen={isResetConfirmOpen}
+          onClose={() => setIsResetConfirmOpen(false)}
+          onConfirm={handleConfirmReset}
+          title="Reset All Data?"
+          message="Are you sure you want to delete ALL groups and data? This action cannot be undone."
+        />
+      )}
+      
+      {groupToDelete && (
+        <ConfirmationModal
+          isOpen={!!groupToDelete}
+          onClose={() => setGroupToDelete(null)}
+          onConfirm={handleConfirmDeleteGroup}
+          title={`Delete Group "${groupToDelete.name}"?`}
+          message="Are you sure you want to delete this group and all its expenses? This action cannot be undone."
         />
       )}
 
