@@ -368,9 +368,9 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background font-sans">
-      <header className="bg-surface/50 backdrop-blur-sm sticky top-0 z-10 shadow-md">
-        <div className="container mx-auto px-2 sm:px-4 lg:px-8 py-4 flex flex-wrap justify-between items-center gap-x-4 gap-y-3">
-          <h1 className="text-xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary whitespace-nowrap">
+      <header className="bg-surface/50 backdrop-blur-sm fixed top-0 w-full z-10 shadow-md">
+        <div className="container mx-auto px-2 sm:px-4 lg:px-8 py-4 flex flex-col sm:flex-row sm:justify-between items-center gap-y-3 sm:gap-y-0 gap-x-4">
+          <h1 className="text-xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary whitespace-nowrap text-center sm:text-left">
             Splitter
           </h1>
           
@@ -384,7 +384,7 @@ const App: React.FC = () => {
             />
             
             {activeGroup && users.length > 0 && (
-              <div 
+              <div
                 className="relative"
                 title={isGuest ? "Identity is locked while in a collaboration session." : "Select your user identity"}
               >
@@ -438,7 +438,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+      <main className="container mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8 mt-[80px] sm:mt-[80px]">
         {!activeGroup ? (
           <div className="text-center py-20 bg-surface rounded-lg shadow-lg">
             <h2 className="text-2xl sm:text-3xl font-bold text-on-surface mb-2">Welcome to Splitter!</h2>
