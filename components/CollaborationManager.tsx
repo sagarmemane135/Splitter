@@ -15,11 +15,15 @@ const CollaborationManager: React.FC<CollaborationManagerProps> = ({ peerId, con
   const [remotePeerId, setRemotePeerId] = useState(initialPeerId || '');
   const [userName, setUserName] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
     if (remotePeerId.trim() && userName.trim()) {
+      setIsConnecting(true);
       onJoinSession(remotePeerId.trim(), userName.trim());
+      // Reset after 15 seconds (connection timeout)
+      setTimeout(() => setIsConnecting(false), 15000);
     }
   };
 
@@ -122,19 +126,37 @@ const CollaborationManager: React.FC<CollaborationManagerProps> = ({ peerId, con
                     />
                 </div>
             </div>
-            <button type="submit" className="mt-4 w-full bg-secondary hover:opacity-80 text-white font-bold py-2 px-4 rounded-md transition-colors">
-              Join & Sync
+            <button 
+              type="submit" 
+              className="mt-4 w-full bg-secondary hover:opacity-80 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+              disabled={isConnecting}
+            >
+              {isConnecting ? 'Connecting...' : 'Join & Sync'}
             </button>
         </form>
 
         <div className="mt-6">
             <h3 className="text-lg font-semibold text-on-surface-secondary mb-2">Connection Status</h3>
-            <p className="text-on-surface">
-                {connections.length > 0 
-                    ? `Connected to ${connections.length} peer(s).`
-                    : 'Not connected to any peers.'
-                }
-            </p>
+            <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${peerId ? 'bg-green-500' : 'bg-yellow-500'} ${peerId ? 'animate-pulse' : ''}`}></div>
+                <p className="text-on-surface text-sm">
+                    {!peerId && 'Initializing...'}
+                    {peerId && connections.length === 0 && 'Ready to connect'}
+                    {peerId && connections.length > 0 && `Connected to ${connections.length} peer(s)`}
+                </p>
+            </div>
+            
+            {peerId && connections.length === 0 && activeGroupName && (
+                <div className="mt-3 p-3 bg-blue-900/20 border border-blue-500/30 rounded text-xs text-blue-300">
+                    <strong>💡 Tips for better connectivity:</strong>
+                    <ul className="mt-1 ml-4 list-disc space-y-1">
+                        <li>Keep this page open while others join</li>
+                        <li>Ensure stable internet on both devices</li>
+                        <li>If connection fails, try refreshing both devices</li>
+                        <li>Mobile networks may take 10-15 seconds to connect</li>
+                    </ul>
+                </div>
+            )}
         </div>
         
         <button onClick={onClose} className="mt-6 w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md transition">

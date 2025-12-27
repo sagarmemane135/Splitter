@@ -62,7 +62,23 @@ export const useCollaboration = (onDataReceived: (data: CollabPayload, conn: any
         return;
     }
 
-    const peer = new window.Peer(existingId || undefined, {});
+    // Configure with proper STUN servers and reliable PeerJS server
+    const peer = new window.Peer(existingId || undefined, {
+      host: '0.peerjs.com',
+      port: 443,
+      path: '/',
+      secure: true,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' }
+        ]
+      },
+      debug: 2 // Enable detailed logging for troubleshooting
+    });
     peerRef.current = peer;
 
     peer.on('open', (id: string) => {
@@ -79,8 +95,11 @@ export const useCollaboration = (onDataReceived: (data: CollabPayload, conn: any
     peer.on('error', (err: any) => {
       console.error('PeerJS error:', err);
       if (err.type === 'peer-unavailable') {
-        alert("Could not connect to peer. The ID might be invalid or the user is offline.");
-      } else if (['network', 'server-error', 'socket-error', 'webrtc'].includes(err.type)) {
+        alert("Could not connect to peer. Please check:\n1. The host is still connected\n2. Both devices have internet\n3. Try refreshing both sides\n4. The peer ID is correct");
+      } else if (err.type === 'network') {
+        console.error('Network error. This might be due to firewall or NAT issues.');
+        alert("Connection failed. Please check your network connection and try again.");
+      } else if (['server-error', 'socket-error', 'webrtc'].includes(err.type)) {
         console.log(`Fatal error (${err.type}). Re-initializing PeerJS connection in 3 seconds.`);
         if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = setTimeout(() => {
@@ -111,11 +130,28 @@ export const useCollaboration = (onDataReceived: (data: CollabPayload, conn: any
         return;
     }
 
-    const conn = peerRef.current.connect(remotePeerId, { reliable: true });
+    console.log(`Attempting to connect to peer: ${remotePeerId}`);
+    const conn = peerRef.current.connect(remotePeerId, { 
+      reliable: true,
+      serialization: 'json'
+    });
+    
     if (conn) {
       // Set up listeners immediately to avoid race conditions
       setupConnection(conn);
+      
+      // Add connection timeout
+      const connectionTimeout = setTimeout(() => {
+        if (!conn.open) {
+          console.error('Connection timeout');
+          conn.close();
+          alert('Connection timeout. Please ensure the host is online and try again.');
+        }
+      }, 15000); // 15 second timeout
+      
       conn.on('open', () => {
+        clearTimeout(connectionTimeout);
+        console.log(`Successfully connected to peer: ${remotePeerId}`);
         const payload: CollabPayload = { type: 'JOIN_REQUEST', name };
         conn.send(JSON.stringify(payload));
       });
