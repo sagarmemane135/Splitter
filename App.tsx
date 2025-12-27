@@ -369,12 +369,12 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-background font-sans">
       <header className="bg-surface/50 backdrop-blur-sm fixed top-0 w-full z-10 shadow-md">
-        <div className="container mx-auto px-2 sm:px-4 lg:px-8 py-4 flex flex-col sm:flex-row sm:justify-between items-center gap-y-3 sm:gap-y-0 gap-x-4">
-          <h1 className="text-xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary whitespace-nowrap text-center sm:text-left">
+        <div className="container mx-auto px-2 sm:px-4 lg:px-8 py-3 sm:py-4 flex flex-col sm:flex-row sm:justify-between items-center gap-y-2 sm:gap-y-0 gap-x-2 sm:gap-x-4">
+          <h1 className="text-lg sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary whitespace-nowrap text-center sm:text-left">
             Splitter
           </h1>
           
-          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 w-full sm:w-auto flex-grow sm:flex-grow-0">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1.5 sm:gap-2 w-full sm:w-auto flex-grow sm:flex-grow-0">
             <GroupManager
               groups={groups}
               activeGroupId={activeGroupId}
@@ -391,7 +391,7 @@ const App: React.FC = () => {
                 <select
                   value={currentUserId || ''}
                   onChange={e => setCurrentUserId(e.target.value)}
-                  className="bg-background border border-gray-600 rounded-md px-3 py-2 text-on-surface text-sm focus:ring-primary focus:border-primary transition max-w-[120px] sm:max-w-[150px] disabled:bg-gray-800 disabled:cursor-not-allowed disabled:text-on-surface-secondary"
+                  className="bg-background border border-gray-600 rounded-md px-2 py-1.5 sm:px-3 sm:py-2 text-on-surface text-xs sm:text-sm focus:ring-primary focus:border-primary transition max-w-[100px] sm:max-w-[150px] disabled:bg-gray-800 disabled:cursor-not-allowed disabled:text-on-surface-secondary"
                   aria-label="Select your user identity"
                   disabled={isGuest}
                 >
@@ -403,7 +403,7 @@ const App: React.FC = () => {
             
             <button
               onClick={() => setShowCollabModal(true)}
-              className="relative flex items-center justify-center p-2 sm:px-3 sm:gap-2 text-sm font-medium text-white bg-secondary/80 hover:bg-secondary rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-secondary"
+              className="relative flex items-center justify-center p-1.5 sm:p-2 sm:px-3 sm:gap-2 text-xs sm:text-sm font-medium text-white bg-secondary/80 hover:bg-secondary rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-secondary"
               title="Collaborate with others"
             >
               <ShareIcon />
@@ -419,7 +419,7 @@ const App: React.FC = () => {
               id="pdf-download-btn"
               onClick={handleDownloadPdf}
               disabled={!activeGroup}
-              className="flex items-center justify-center p-2 sm:px-3 sm:gap-2 text-sm font-medium text-white bg-primary hover:bg-primary-focus rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-primary whitespace-nowrap disabled:bg-gray-600 disabled:cursor-not-allowed"
+              className="flex items-center justify-center p-1.5 sm:p-2 sm:px-3 sm:gap-2 text-xs sm:text-sm font-medium text-white bg-primary hover:bg-primary-focus rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-primary whitespace-nowrap disabled:bg-gray-600 disabled:cursor-not-allowed"
               title="Download report as PDF"
             >
               <DownloadIcon />
@@ -428,7 +428,7 @@ const App: React.FC = () => {
 
             <button
               onClick={() => setIsResetConfirmOpen(true)}
-              className="flex items-center justify-center p-2 sm:px-3 sm:gap-2 text-sm font-medium text-white bg-danger/80 hover:bg-danger rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-danger whitespace-nowrap"
+              className="flex items-center justify-center p-1.5 sm:p-2 sm:px-3 sm:gap-2 text-xs sm:text-sm font-medium text-white bg-danger/80 hover:bg-danger rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-danger whitespace-nowrap"
               title="Reset All Data"
             >
               <TrashIcon />
@@ -438,7 +438,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8 mt-[80px] sm:mt-[80px]">
+      <main className="container mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8 mt-[110px] sm:mt-[80px]">
         {!activeGroup ? (
           <div className="text-center py-20 bg-surface rounded-lg shadow-lg">
             <h2 className="text-2xl sm:text-3xl font-bold text-on-surface mb-2">Welcome to Splitter!</h2>
